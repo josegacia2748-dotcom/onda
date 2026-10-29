@@ -4,3 +4,5 @@ public/audio/
 .preview/
 *.local
 .DS_Store
+
+.vercel

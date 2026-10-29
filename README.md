@@ -43,6 +43,18 @@ npm run preview
 
 El build incluye el service worker y el manifest. Para probar la instalación y el modo offline, usa `preview` o sirve `dist/` por HTTPS (o `localhost`).
 
+### Despliegue
+
+La versión pública vive en **https://onda-azure.vercel.app** y el código en **https://github.com/josegacia2748-dotcom/onda**.
+
+`vercel.json` fuerza `npm run build`, que ejecuta `prebuild` y regenera el catálogo de audio antes de compilar. Así el despliegue no depende de archivos locales sin versionar.
+
+Para volver a desplegar desde la carpeta del proyecto:
+
+```bash
+vercel --prod
+```
+
 > Si publicas una versión nueva, sube `VERSION` en `public/sw.js` para invalidar el precache.
 
 ### Pruebas
