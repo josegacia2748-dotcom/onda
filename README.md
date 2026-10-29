@@ -21,6 +21,8 @@ Streaming de música ligero, tipo Spotify, con **descargas sin conexión** y **t
 | Estado | store propio con `useSyncExternalStore` |
 | Offline | IndexedDB + service worker |
 | Audio | `<audio>` único + Web Media Session |
+| Android | Capacitor 8 (`@capacitor/core`, `@capacitor/cli`, `@capacitor/android`) |
+| Escritorio | Electron 45 + electron-builder 26 (Windows) |
 
 Sin Tailwind, sin Redux, sin React Router: el bundle se mantiene pequeño y el arranque es inmediato.
 
@@ -66,6 +68,40 @@ npm run smoke
 ```
 
 Lanza Edge headless vía CDP y comprueba 20 puntos: render, tema y persistencia, reproducción, menú contextual, descarga en IndexedDB, service worker, recarga y reproducción sin conexión, layout móvil y barra de progreso táctil. Las capturas quedan en `.preview/`.
+
+## Android (APK) y escritorio (Windows)
+
+La misma build web se empaqueta con **Capacitor** (Android) y **Electron** (Windows).
+
+### Android
+
+Requisitos: Android Studio con JDK 21+ y Android SDK 36.
+
+```bash
+npm run cap:sync      # build (regenera audio) + copia dist/ al proyecto Android
+npm run android       # build + abre Android Studio
+npm run android:apk   # build + compila el APK de depuración con Gradle
+```
+
+- Proyecto nativo en `android/` (paquete `com.jgarapps.onda`).
+- En Android Studio: **Build → Build Bundle(s)/APK(s) → Build APK(s)**; el APK queda en `android/app/build/outputs/apk/debug/`.
+- Las pistas se sirven desde `https://localhost/audio/...` (esquema seguro de Capacitor), así que el streaming, las descargas a IndexedDB y la reproducción offline funcionan igual que en la web.
+- El manifest declara `INTERNET` y permisos de almacenamiento heredados para exportar datos del proyecto.
+- La interfaz usa `viewport-fit=cover` y `env(safe-area-inset-*)`: respeta notch, bordes curvos y barras de gestos de cualquier marca Android.
+
+### Windows
+
+```bash
+npm run electron:dev            # Vite + Electron en caliente
+npm run electron:build          # instalador NSIS en release/
+npm run electron:build:portable # .exe portable en release/
+npm run electron:build:dir      # carpeta sin instalador (release/win-unpacked)
+```
+
+- La build se sirve con el protocolo propio `app://bundle` (origen seguro). El `fetch` de `/audio/...`, IndexedDB y `localStorage` funcionan igual que en la web.
+- `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`.
+- Ventana principal de 1280×840 (mínimo 1000×640) y menú **Reproducción** conectado al reproductor (play/pausa, siguiente, anterior).
+- El service worker no se registra en Electron (el protocolo propio no lo admite) y la app funciona igual: las descargas offline viven en IndexedDB.
 
 ## Descargas sin conexión
 
@@ -118,8 +154,16 @@ src/
 public/
   sw.js  manifest.webmanifest  icon.svg  icon-maskable.svg
   audio/               WAVs generados (no versionados)
+electron/
+  main.cjs             ventana, protocolo app://bundle, menú Reproducción
+  preload.cjs          puente seguro (window.desktopApp)
+android/               proyecto Android generado por Capacitor (APK)
+capacitor.config.ts    identidad de la app Android (appId, webDir, scheme)
 scripts/
   generate-audio.mjs   sintetizador WAV determinista
+  smoke.mjs            prueba E2E con Edge + CDP
+  electron-dev.mjs     Vite + Electron para desarrollo de escritorio
+  android-apk.mjs      compila el APK de depuración con Gradle
 ```
 
 ## Límites conocidos
